@@ -72,10 +72,14 @@ class Network:
         thresh = variable_dict(thresh, Domain(0, 1))
         self.thresh = thresh
 
+    def add_inputs(self, keys):
+        for i in range(len(keys)):
+            key = keys[i]
+            self.inputs[key] = 1-i/len(keys)
+            self.values[key] = 1
+
     def update(self, active=[]):
-        for i in active:
-            self.values[i] = 1
-            self.inputs[i] = 0
+        self.add_inputs(active)
 
         inputs = sort(self.inputs)
         current = len(self.inputs)

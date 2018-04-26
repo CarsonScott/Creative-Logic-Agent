@@ -2,7 +2,9 @@ from Variable import *
 from Network import *
 from lib.util import *
 
-keys = ['a', 'b', 'c', 'd', 'e']
+keys1 = ['a', 'b', 'c', 'd', 'e']
+keys2 = ['f', 'g', 'h', 'i', 'j']
+keys = keys1 + keys2
 
 W = None
 L = None
@@ -16,40 +18,18 @@ log2 = open('log2.txt', 'w')
 total = 0
 count = 0
 
-rnn = Network(2, 0.0001, 0.0001)
+rnn = Network(5, 0.0001, 0.0001)
 rnn.create(keys)
 
 index = 0
 for c in range(10000):
-    index = loop(len(keys), index+1)
+    index = loop(len(keys1), index+1)
 
-    x1 = keys[index]
-    y = rnn.update([x1])
+    x1 = keys1[index]
+    x2 = keys2[index]
 
-    # print(rnn.inputs, y)
-
-    count += 1
-    total += int(p==x)
-    # if index % 10 == 0:
-    #     total /= count
-    #     total = 0
-    #     count = 0
-
-    W = rnn.weights()
-    print_graph(W)
-
-    # # V = Dict()
-    # # for i in W.keys():
-    # #     for j in W[i].keys():
-    # #         V[j] = W[x][j]
-
-    # if len(V) > 0:
-    #     V = sort(V)
-    #     p = V[len(V)-1]
-
-    # # save_weights(W, 'a', log1)
-    # save_weights(W, 'b', log2)
- 
+    y = rnn.update([x1, x2])
+    print_graph(rnn.weights())
 
 log1.close()
 log2.close()
