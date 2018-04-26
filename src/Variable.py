@@ -47,4 +47,12 @@ class Variable:
         error = self.error(value)-self.error(self.value)
         delta -= error
         target = value + delta * rate
-        self.set(target)
+        self.value = target
+
+    def decay(self, delta=0):
+        offset = self.value - self.domain.center()
+        delta = abs(delta)
+
+        if offset > 0:
+            delta = -delta
+        self.iterate(delta)
