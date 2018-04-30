@@ -1,28 +1,52 @@
-from Graph import *
-from Variable import *
+from data.graph import *
+from data.variable import *
 from lib.util import *
 
-def variable_dict(D, d):
+def variable_dict(D, d, r):
     y = D
     for i in y.keys():
-        y[i] = Variable(d, y[i])
+        y[i] = Variable(d, y[i], r)
     return y
 
-def variable_graph(G, d):
+def variable_graph(G, d, r):
     y = G
     for i in y.keys():
-        y[i] = variable_dict(y[i], d)
+        y[i] = variable_dict(y[i], d, r)
     return y
 
 class Network:
-    def __init__(self, bsize, lrate, drate):
+    def __init__(self, lrate, drate):
         self.lrate = lrate
         self.drate = drate
-        self.bsize = bsize
         self.inputs = Dict()
+        self.limits = Dict()
         self.values = Dict()
         self.thresh = Dict()
         self.links = Graph()
+
+    def add_buffer(self, name, size, keys):
+        self.inputs[name] = Dict()
+        self.limits[name] = size
+
+    def create(self, keys):
+        self.values.create(keys)
+        self.thresh.create(keys)
+        self.links.create(keys)
+
+        values = self.values
+        values = constant_dict(values, 0)
+        self.values = values
+
+        links = self.links
+        links = complete_graph(links)
+        links = constant_graph(links, 0)
+        links = variable_graph(links, Domain(-2, 2), self.lrate)
+        self.links = links
+
+        thresh = self.thresh
+        thresh = custom_dict(thresh, random_thresh)
+        thresh = variable_dict(thresh, Domain(0, 4), self.lrate)
+        self.thresh = thresh
 
     def get_value(self, i):
         return self.value[i]
@@ -42,58 +66,41 @@ class Network:
     def set_thresh(self, i, x):
         self.thresh[i] = x
 
-    def children(self, key):
-        return list(self.weights[key].keys())
+    def children(self, k):
+        return list(self.weights[k].keys())
 
-    def parents(self, key):
+    def parents(self, k):
         Y = []
         for i in self.weights.keys():
-            if key in self.weights[i].keys():
+            if k in self.weights[i].keys():
                 Y.append(i)
         return Y
 
-    def create(self, keys):
-        self.values.create(keys)
-        self.thresh.create(keys)
-        self.links.create(keys)
+    def add_inputs(self, b, X):
+        for i in range(len(X)):
+            k = X[i]
+            if k != None:
+                self.inputs[b][k] = 1-i/len(X)
+            self.values[k] = 1
 
+    def update(self, b, X):
+        self.add_inputs(b, X)
+
+        inputs = sort(self.inputs[b])
+        current = len(self.inputs[b])
+        target = self.limits[b]
         values = self.values
-        values = constant_dict(values, 0)
-        self.values = values
 
-        links = self.links
-        links = complete_graph(links)
-        links = constant_graph(links, 0.1)
-        links = variable_graph(links, Domain(-2, 2))
-        self.links = links
-
-        thresh = self.thresh
-        thresh = constant_dict(thresh, 0.5)
-        thresh = variable_dict(thresh, Domain(0, 1))
-        self.thresh = thresh
-
-    def add_inputs(self, keys):
-        for i in range(len(keys)):
-            key = keys[i]
-            self.inputs[key] = 1-i/len(keys)
-            self.values[key] = 1
-
-    def update(self, active=[]):
-        self.add_inputs(active)
-
-        inputs = sort(self.inputs)
-        current = len(self.inputs)
-        target = self.bsize
-                 
-        old = inputs[target:current]
+        old = inputs[target-1:current]
         
         visited = []
-        for i in self.inputs.keys():
+        for i in self.inputs[b].keys():
             if i not in old:
-                self.inputs[i] += 1
-                for j in self.inputs.keys():
+                self.inputs[b][i] += 1
+
+                for j in self.inputs[b].keys():
                     if j not in old and j not in visited and i != j:
-                        offset = self.inputs[j] - self.inputs[i]
+                        offset = self.inputs[b][j] - self.inputs[b][i]
 
                         if offset > 0:
                             initial, final = j, i
@@ -101,13 +108,16 @@ class Network:
                             initial, final = i, j
                         else: continue
 
-                        error = 1 - abs(offset) / self.bsize
+                        error = 1 - abs(offset) / self.limits[b]
                         delta = pow(1 + error, 2) * self.lrate
                         self.links[initial][final].iterate(delta)
-            visited.append(i)
 
-        active = []
-        values = self.values
+                visited.append(i)
+            else:
+                del self.inputs[b][i]
+                self.values[i] = 0
+    
+        active = Dict()
         for i in self.values.keys():
             parents = self.links.sources(i)
             thresh = self.get_thresh(i)
@@ -124,7 +134,8 @@ class Network:
             
             self.values[i] = output
             self.thresh[i].iterate(delta)
-            if output:active.append(i)
+            if output == 1:
+                active[i] = offset
 
             for j in self.links[i].keys():
                 self.links[i][j].decay(self.drate)

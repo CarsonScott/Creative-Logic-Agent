@@ -14,7 +14,7 @@ class Domain:
         return self.low <= value and self.high > value
 
 class Variable:
-    def __init__(self, domain=None, rate=0, value=0):
+    def __init__(self, domain=None, value=0, rate=1):
         self.domain = domain
         self.value = value
         self.rate = rate
@@ -43,11 +43,13 @@ class Variable:
 
     def iterate(self, delta=0):
         rate = self.rate
-        value = self.value + delta * rate
-        error = self.error(value)-self.error(self.value)
-        delta -= error
+        value = self.value
+        error = self.error(value+delta)-self.error(value)
+        if error != 0:
+            rate *= 1 + error/(1+error)
         target = value + delta * rate
-        self.value = target
+        self.set(target)
+        # self.value = target
 
     def decay(self, delta=0):
         offset = self.value - self.domain.center()

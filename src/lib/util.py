@@ -1,8 +1,58 @@
-from math import sqrt
+from math import sqrt, floor
 from random import randrange as rr
 
+def mergesort(X):
+    s = len(X)
+    c = floor(s/2)
+    A = X[:c]
+    B = X[c:s]
+    Y = X
+    if len(A) == 0:
+        return X
+ 
+    if len(A) == 1:
+        A = mergesort(A)
+        B = mergesort(B)
+        return A + B
+    else:
+        return A+B
+
+    for i in range(len(A)):
+        if len(A):
+            for j in range(len(B)):
+                a = A[i]
+                b = B[j]
+
+                if len(A) == 1:
+                    if a[0] > b[0]:
+                        v = a[0]
+                        a[0] = b[0]
+                        b[0] = v
+                    if a[1] > b[0]:
+                        v = a[1]
+                        a[1] = b[0]
+                        b[0] = v
+                    if a[1] > b[1]:
+                        v = a[1]
+                        a[1] = b[1]
+                        b[1] = v
+
+                    A[i] = a
+                    B[j] = b
+        Y = A + B
+          
+    return Y
+
+
+def charlist(x):
+    chars = []
+    for i in x:
+        if i not in chars:
+            chars.append(i)
+    return chars
+
 def random_weight():
-    return rr(-10, 10)/20
+    return rr(-10, 10)/10
 
 def random_thresh():
     return rr(10)/10
@@ -54,7 +104,7 @@ def print_weights(W, i):
     Ki = W[i].keys()
     s = i + ':\n'
     for j in Ki:
-        v = W[i][j].get()
+        v = W[i][j]
         s += '\t' + j + ': ' + str(v) + '\n' 
     print(s)
 
@@ -126,30 +176,6 @@ def compute_delta(graph, last):
             delta[i][j] = last[i][j] - graph[i][j]
     return delta
 
-class Dict(dict):
-    def set(self, key, value):
-        self[key] = value
-    def get(self, key):
-        return self[key]
-    def create(self, keys):
-        for i in range(len(keys)):
-            k = keys[i]
-            self[k] = None
-    def has(self, key):
-        return key in self.keys()
-    def keys(self):
-         return list(super().keys())
-
-class Buffer(list):
-    def __init__(self, size=0):
-        self.size = size
-        for i in range(size):
-            self.append(None)
-    def __call__(self, value):
-        self.insert(0, value)
-        if len(self) > self.size:
-            del self[self.size:len(self)]
-
 class Link(dict):
     def __init__(self, a, b, x):
         self['a'] = a
@@ -205,6 +231,21 @@ def intersection(A, B):
             Y.append(a)
     return Y
 
+def union(A, B):
+    Y = A
+    for i in B:
+        if i not in Y:
+            Y.append(i)
+    return Y
+
+def compliment(A, B):
+    Y = []
+    for i in range(len(A)):
+        a = A[i]
+        if a not in B:
+            Y.append(a)
+    return Y
+
 def sort(d):
     keys = list(d.keys())
     vals = []
@@ -234,8 +275,12 @@ def sort(d):
     return keys
 
 def distance(p1, p2):
-    x1, y1 = p1['x'], p1['y']
-    x2, y2 = p2['x'], p2['y']
+    if isinstance(p1, list):
+        x1, y1 = p1[0], p1[1]
+        x2, y2 = p2[0], p2[1]
+    else:
+        x1, y1 = p1['x'], p1['y']
+        x2, y2 = p2['x'], p2['y']
     return sqrt(pow(x2-x1, 2) + pow(y2-y1, 2))
 
 def parse(string, char=[' ']):
